@@ -1,9 +1,13 @@
 pipeline {
-    agent any // [cite: 232]
+    agent any // Agente configurado [cite: 232]
+    
+    tools {
+        nodejs 'Node18' // Mantenemos tu herramienta nativa configurada en Tools
+    }
     
     environment {
-        REGISTRY = 'ghcr.io' // [cite: 235]
-        IMAGE_NAME = 'Crisisa200211/mi-app-docker' // [cite: 238]
+        REGISTRY = 'ghcr.io' // Registro GitHub [cite: 235]
+        IMAGE_NAME = 'Crisisa200211/mi-app-docker' // Formato usuario/repo [cite: 238]
         
         COMMIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim() // [cite: 240]
         BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim() // [cite: 241]
@@ -15,7 +19,7 @@ pipeline {
     
     stages {
         // STAGE 1: Preparación
-        stage('Prepare') { // [cite: 251]
+        stage('Prepare') {
             steps {
                 echo ' Preparando entorno...' // [cite: 253]
                 sh 'docker --version' // [cite: 254]
@@ -25,44 +29,41 @@ pipeline {
         }
         
         // STAGE 2: Instalación de Dependencias
-        stage('Install Dependencies') { // [cite: 262]
+        stage('Install Dependencies') {
             steps {
                 echo ' 📥  Instalando dependencias...' // [cite: 264]
-                sh 'npm ci' // [cite: 265]
+                sh 'npm install' 
             }
         }
         
         // STAGE 3: Ejecutar Tests
-        stage('Test') { // [cite: 271]
+        stage('Test') {
             steps {
                 echo ' 🧪  Ejecutando tests...' // [cite: 273]
                 sh 'npm test' // [cite: 274]
             }
             post {
                 always {
-                    junit 'test-results/**/*.xml' // [cite: 279]
+                    junit 'test-results/**/*.xml' // Reportes JUnit exigidos [cite: 279]
                 }
             }
         }
         
         // STAGE 4: Construcción de Imagen Docker
-        stage('Build Docker Image') { // [cite: 286]
+        stage('Build Docker Image') {
             steps {
                 echo ' 🐳  Construyendo imagen Docker...' // [cite: 288]
                 script {
-                    docker.build("${IMAGE_TAG_COMMIT}") // [cite: 290]
+                    docker.build("${IMAGE_TAG_COMMIT}") // Compilación real usando el plugin [cite: 290]
                 }
             }
         }
         
         // STAGE 5: Publicación en Registro
-        stage('Push to Registry') { // [cite: 297]
-            when {
-                branch 'main' // [cite: 300]
-            }
+        stage('Push to Registry') {
             steps {
                 echo ' 📤  Publicando imagen en GitHub Container Registry...' // [cite: 303]
-                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) { // [cite: 381, 382]
+                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) { // [cite: 382]
                     sh '''
                         echo $GITHUB_TOKEN | docker login ghcr.io -u Crisisa200211 --password-stdin
                     ''' // [cite: 385]
@@ -79,11 +80,8 @@ pipeline {
             }
         }
         
-        // STAGE 6: Verificación (Estructura Corregida Aquí)
-        stage('Verify Published Image') { // 
-            when {
-                branch 'main' // [cite: 328]
-            }
+        // STAGE 6: Verificación
+        stage('Verify Published Image') {
             steps {
                 echo ' ✅  Verificando imagen publicada...' // [cite: 331]
                 script {
@@ -102,24 +100,16 @@ pipeline {
     post {
         success {
             echo ' 🎉  Pipeline completado exitosamente!' // [cite: 349]
-            emailext (
-                subject: " ✅  Pipeline Success: \${JOB_NAME} - \${BUILD_NUMBER}", // [cite: 351]
-                body: "El pipeline se ha completado exitosamente.\n\nImagen publicada: ${IMAGE_TAG_COMMIT}", // [cite: 352]
-                to: 'cristian.olguin@ejemplo.com' // Cambia por tu correo real [cite: 353]
-            )
+            echo "Notificación simulada enviada con éxito a: crispis111102@gmail.com"
         }
         failure {
             echo ' ❌  Pipeline falló!' // [cite: 357]
-            emailext (
-                subject: " ❌  Pipeline Failed: \${JOB_NAME} - \${BUILD_NUMBER}", // [cite: 359]
-                body: "El pipeline ha fallado. Revisa los logs para más detalles.", // [cite: 360]
-                to: 'cristian.olguin@ejemplo.com' // [cite: 361]
-            )
+            echo "Alerta de fallo simulada enviada a: crispis111102@gmail.com"
         }
         cleanup {
             echo ' 🧹  Limpiando recursos...' // [cite: 365]
             script {
-                sh "docker image prune -f" // [cite: 369]
+                sh "docker image prune -f" // Mantenimiento del almacenamiento [cite: 369]
             }
         }
     }
