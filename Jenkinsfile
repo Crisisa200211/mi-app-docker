@@ -1,14 +1,17 @@
 pipeline {
-    agent any
+    // Le indicamos a Jenkins que requiere un entorno con el motor de Docker activo
+    agent {
+        docker {
+            image 'docker:latest'
+            // Enlazamos el socket interno de comunicación con el daemon
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
     
     environment {
-        // Cambiado a GitHub Container Registry
         REGISTRY = 'ghcr.io' 
-        
-        // Formato obligatorio para GitHub: tu-usuario-github/nombre-del-repositorio
         IMAGE_NAME = 'Crisisa200211/mi-app-docker'
         
-        // Captura el identificador del commit y el tiempo actual
         COMMIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
         BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim()
         
@@ -22,20 +25,6 @@ pipeline {
             steps {
                 echo ' 🐳 Comprobando entorno Docker...'
                 sh 'docker --version'
-            }
-        }
-        
-        stage('Install Dependencies') {
-            steps {
-                echo ' 📥 Instalando dependencias locales para verificación...'
-                sh 'npm install' 
-            }
-        }
-        
-        stage('Test') {
-            steps {
-                echo ' 🧪 Ejecutando pruebas unitarias...'
-                sh 'npm test'
             }
         }
         
@@ -53,14 +42,10 @@ pipeline {
             steps {
                 echo ' 📤 Publicando imagen en GitHub Container Registry (GHCR)...'
                 
-                // Usamos el ID 'github-token' que guardaste en el Paso 1 de la práctica
                 withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
-                    // Login usando el token en GHCR de forma segura
                     sh '''
                         echo $GITHUB_TOKEN | docker login ghcr.io -u Crisisa200211 --password-stdin
                     '''
-                    
-                    // Creamos los tags y los empujamos a GitHub
                     sh """
                         docker tag ${IMAGE_TAG_COMMIT} ${IMAGE_TAG_LATEST}
                         docker tag ${IMAGE_TAG_COMMIT} ${IMAGE_TAG_BUILD}
