@@ -1,96 +1,91 @@
 pipeline {
-    agent any // Agente configurado 
+    agent any // [cite: 232]
     
     environment {
-        REGISTRY = 'ghcr.io' // Registro GitHub 
-        IMAGE_NAME = 'Crisisa200211/mi-app-docker' // Formato obligatorio: usuario/repo [cite: 29]
+        REGISTRY = 'ghcr.io' // [cite: 235]
+        IMAGE_NAME = 'Crisisa200211/mi-app-docker' // [cite: 238]
         
-        // Variables de versionado dinámico [cite: 29]
-        COMMIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim()
+        COMMIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim() // [cite: 240]
+        BUILD_TIMESTAMP = sh(script: 'date +%Y%m%d-%H%M%S', returnStdout: true).trim() // [cite: 241]
         
-        // Definición de múltiples Tags obligatorios 
-        IMAGE_TAG_LATEST = "${REGISTRY}/${IMAGE_NAME}:latest"
-        IMAGE_TAG_COMMIT = "${REGISTRY}/${IMAGE_NAME}:${COMMIT_SHA}"
-        IMAGE_TAG_BUILD  = "${REGISTRY}/${IMAGE_NAME}:build-${BUILD_TIMESTAMP}"
+        IMAGE_TAG_LATEST = "${REGISTRY}/${IMAGE_NAME}:latest" // [cite: 243]
+        IMAGE_TAG_COMMIT = "${REGISTRY}/${IMAGE_NAME}:${COMMIT_SHA}" // [cite: 244]
+        IMAGE_TAG_BUILD  = "${REGISTRY}/${IMAGE_NAME}:build-${BUILD_TIMESTAMP}" // [cite: 245]
     }
     
     stages {
-        // STAGE 1: Preparación [cite: 30]
-        stage('Prepare') {
+        // STAGE 1: Preparación
+        stage('Prepare') { // [cite: 251]
             steps {
-                echo ' Preparando entorno...' [cite: 30]
-                sh 'docker --version' [cite: 31]
-                sh 'node --version' [cite: 31]
-                sh 'npm --version' [cite: 31]
+                echo ' Preparando entorno...' // [cite: 253]
+                sh 'docker --version' // [cite: 254]
+                sh 'node --version' // [cite: 255]
+                sh 'npm --version' // [cite: 256]
             }
         }
         
-        // STAGE 2: Instalación de Dependencias [cite: 31, 32]
-        stage('Install Dependencies') {
+        // STAGE 2: Instalación de Dependencias
+        stage('Install Dependencies') { // [cite: 262]
             steps {
-                echo ' 📥  Instalando dependencias...' [cite: 32]
-                sh 'npm ci' // Instalación limpia [cite: 32]
+                echo ' 📥  Instalando dependencias...' // [cite: 264]
+                sh 'npm ci' // [cite: 265]
             }
         }
         
-        // STAGE 3: Ejecutar Tests [cite: 33]
-        stage('Test') {
+        // STAGE 3: Ejecutar Tests
+        stage('Test') { // [cite: 271]
             steps {
-                echo ' 🧪  Ejecutando tests...' [cite: 33]
-                sh 'npm test' [cite: 33]
+                echo ' 🧪  Ejecutando tests...' // [cite: 273]
+                sh 'npm test' // [cite: 274]
             }
             post {
                 always {
-                    // Publicación obligatoria de reportes JUnit 
-                    junit 'test-results/**/*.xml' [cite: 34]
+                    junit 'test-results/**/*.xml' // [cite: 279]
                 }
             }
         }
         
-        // STAGE 4: Construcción de Imagen Docker [cite: 35]
-        stage('Build Docker Image') {
+        // STAGE 4: Construcción de Imagen Docker
+        stage('Build Docker Image') { // [cite: 286]
             steps {
-                echo ' 🐳  Construyendo imagen Docker...' [cite: 36]
+                echo ' 🐳  Construyendo imagen Docker...' // [cite: 288]
                 script {
-                    // Uso nativo de la clase docker.build del plugin [cite: 36]
-                    docker.build("${IMAGE_TAG_COMMIT}") [cite: 36]
+                    docker.build("${IMAGE_TAG_COMMIT}") // [cite: 290]
                 }
             }
         }
         
-        // STAGE 5: Publicación en Registro (GHCR con Credenciales) [cite: 36, 37]
-        stage('Push to Registry') {
+        // STAGE 5: Publicación en Registro
+        stage('Push to Registry') { // [cite: 297]
             when {
-                branch 'main' // Cláusula condicional obligatoria [cite: 37]
+                branch 'main' // [cite: 300]
             }
             steps {
-                echo ' 📤  Publicando imagen en GitHub Container Registry...' [cite: 38]
-                // Extracción segura del token desde las credenciales globales de Jenkins [cite: 52]
-                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                echo ' 📤  Publicando imagen en GitHub Container Registry...' // [cite: 303]
+                withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) { // [cite: 381, 382]
                     sh '''
                         echo $GITHUB_TOKEN | docker login ghcr.io -u Crisisa200211 --password-stdin
-                    '''
-                    // Taggear la imagen con las múltiples versiones exigidas [cite: 40]
+                    ''' // [cite: 385]
                     sh """
                         docker tag ${IMAGE_TAG_COMMIT} ${IMAGE_TAG_LATEST}
                         docker tag ${IMAGE_TAG_COMMIT} ${IMAGE_TAG_BUILD}
-                    """
-                    // Publicación real de todas las variantes [cite: 42]
+                    """ // [cite: 311, 312]
                     sh """
                         docker push ${IMAGE_TAG_COMMIT}
                         docker push ${IMAGE_TAG_LATEST}
                         docker push ${IMAGE_TAG_BUILD}
-                    """
+                    """ // [cite: 316, 317, 318]
                 }
             }
         }
         
-        // STAGE 6: Verificación [cite: 43]
-        stage('Verify Published Image') {
-            when { branch 'main' } [cite: 44]
+        // STAGE 6: Verificación (Estructura Corregida Aquí)
+        stage('Verify Published Image') { // 
+            when {
+                branch 'main' // [cite: 328]
+            }
             steps {
-                echo ' ✅  Verificando imagen publicada...' [cite: 44]
+                echo ' ✅  Verificando imagen publicada...' // [cite: 331]
                 script {
                     sh """
                         echo " 📦  Imagen publicada: ${IMAGE_TAG_COMMIT}"
@@ -98,37 +93,33 @@ pipeline {
                         echo "  - ${IMAGE_TAG_COMMIT}"
                         echo "  - ${IMAGE_TAG_LATEST}"
                         echo "  - ${IMAGE_TAG_BUILD}"
-                    """
+                    """ // [cite: 334, 336, 337, 338]
                 }
             }
         }
     }
     
-    // POST: Acciones finales de notificación y limpieza 
     post {
         success {
-            echo ' 🎉  Pipeline completado exitosamente!' [cite: 47]
-            // Notificación extendida de correo en caso de éxito [cite: 48]
+            echo ' 🎉  Pipeline completado exitosamente!' // [cite: 349]
             emailext (
-                subject: " ✅  Pipeline Success: \${JOB_NAME} - \${BUILD_NUMBER}",
-                body: "El pipeline se ha completado exitosamente.\n\nImagen publicada: ${IMAGE_TAG_COMMIT}",
-                to: 'tu-correo@ejemplo.com' // Cambia por tu dirección de correo real [cite: 48]
+                subject: " ✅  Pipeline Success: \${JOB_NAME} - \${BUILD_NUMBER}", // [cite: 351]
+                body: "El pipeline se ha completado exitosamente.\n\nImagen publicada: ${IMAGE_TAG_COMMIT}", // [cite: 352]
+                to: 'cristian.olguin@ejemplo.com' // Cambia por tu correo real [cite: 353]
             )
         }
         failure {
-            echo ' ❌  Pipeline falló!' [cite: 49]
-            // Notificación extendida de correo en caso de fallo [cite: 50]
+            echo ' ❌  Pipeline falló!' // [cite: 357]
             emailext (
-                subject: " ❌  Pipeline Failed: \${JOB_NAME} - \${BUILD_NUMBER}",
-                body: "El pipeline ha fallado. Revisa los logs para más detalles.",
-                to: 'tu-correo@ejemplo.com' [cite: 50]
+                subject: " ❌  Pipeline Failed: \${JOB_NAME} - \${BUILD_NUMBER}", // [cite: 359]
+                body: "El pipeline ha fallado. Revisa los logs para más detalles.", // [cite: 360]
+                to: 'cristian.olguin@ejemplo.com' // [cite: 361]
             )
         }
         cleanup {
-            echo ' 🧹  Limpiando recursos...' [cite: 51]
+            echo ' 🧹  Limpiando recursos...' // [cite: 365]
             script {
-                // Eliminación obligatoria de imágenes huérfanas locales para ahorrar espacio [cite: 51]
-                sh "docker image prune -f" [cite: 51]
+                sh "docker image prune -f" // [cite: 369]
             }
         }
     }
