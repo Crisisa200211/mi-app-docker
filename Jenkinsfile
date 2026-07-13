@@ -7,7 +7,6 @@ pipeline {
     
     environment {
         REGISTRY = 'ghcr.io' 
-        // CORREGIDO: Todo el nombre de la imagen en minúsculas como lo exige Docker
         IMAGE_NAME = 'crisisa200211/mi-app-docker' 
         
         COMMIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim() 
@@ -65,7 +64,6 @@ pipeline {
             steps {
                 echo ' 📤  Publicando imagen en GitHub Container Registry...' 
                 withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) { 
-                    // Mantenemos tu usuario original en el login web, pero la ruta en minúsculas
                     sh '''
                         echo $GITHUB_TOKEN | docker login ghcr.io -u Crisisa200211 --password-stdin
                     ''' 
@@ -101,27 +99,23 @@ pipeline {
     
     post {
         success {
-            echo ' 🎉  Pipeline completado exitosamente!' [cite: 169]
-            // Notificación real usando la configuración global de tu Jenkins
-            emailext (
-                subject: " ✅  Pipeline Success: \${JOB_NAME} - \${BUILD_NUMBER}", [cite: 171]
-                body: "Hola Cristian,\n\nEl pipeline de Docker se ha completado de forma exitosa de principio a fin.\n\nImagen publicada en GHCR: ${IMAGE_TAG_COMMIT}", [cite: 172]
-                to: 'crispis111102@gmail.com'
-            )
+            echo ' 🎉  Pipeline completado exitosamente!' 
+            // Usamos el comando nativo mail de tu práctica 1 que sí funciona de verdad
+            mail to: 'crispis111102@gmail.com',
+                 subject: " ✅ Pipeline Éxito: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Hola Cristian, tu pipeline de Docker terminó con éxito de principio a fin.\n\nImagen publicada en GHCR: ${IMAGE_TAG_COMMIT}"
         }
         failure {
-            echo ' ❌  Pipeline falló!' [cite: 177]
-            // Alerta real en caso de que alguna etapa marque error
-            emailext (
-                subject: " ❌  Pipeline Failed: \${JOB_NAME} - \${BUILD_NUMBER}", [cite: 179]
-                body: "El pipeline de Docker ha fallado en alguna de sus etapas. Revisa los logs en la interfaz para solucionar el problema.", [cite: 180]
-                to: 'crispis111102@gmail.com'
-            )
+            echo ' ❌  Pipeline falló!' 
+            // Usamos el comando nativo mail para las alertas en caso de fallo
+            mail to: 'crispis111102@gmail.com',
+                 subject: " ❌ Pipeline Fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "El pipeline de Docker falló en alguna etapa. Revisa el estado aquí: ${env.BUILD_URL}"
         }
         cleanup {
-            echo ' 🧹  Limpiando recursos...' [cite: 185]
+            echo ' 🧹  Limpiando recursos...' 
             script {
-                sh "docker image prune -f" [cite: 189]
+                sh "docker image prune -f" 
             }
         }
     }
