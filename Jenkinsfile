@@ -101,17 +101,27 @@ pipeline {
     
     post {
         success {
-            echo ' 🎉  Pipeline completado exitosamente!' 
-            echo "Notificación simulada enviada con éxito a: crispis111102@gmail.com"
+            echo ' 🎉  Pipeline completado exitosamente!' [cite: 169]
+            // Notificación real usando la configuración global de tu Jenkins
+            emailext (
+                subject: " ✅  Pipeline Success: \${JOB_NAME} - \${BUILD_NUMBER}", [cite: 171]
+                body: "Hola Cristian,\n\nEl pipeline de Docker se ha completado de forma exitosa de principio a fin.\n\nImagen publicada en GHCR: ${IMAGE_TAG_COMMIT}", [cite: 172]
+                to: 'crispis111102@gmail.com'
+            )
         }
         failure {
-            echo ' ❌  Pipeline falló!' 
-            echo "Alerta de fallo simulada enviada a: crispis111102@gmail.com"
+            echo ' ❌  Pipeline falló!' [cite: 177]
+            // Alerta real en caso de que alguna etapa marque error
+            emailext (
+                subject: " ❌  Pipeline Failed: \${JOB_NAME} - \${BUILD_NUMBER}", [cite: 179]
+                body: "El pipeline de Docker ha fallado en alguna de sus etapas. Revisa los logs en la interfaz para solucionar el problema.", [cite: 180]
+                to: 'crispis111102@gmail.com'
+            )
         }
         cleanup {
-            echo ' 🧹  Limpiando recursos...' 
+            echo ' 🧹  Limpiando recursos...' [cite: 185]
             script {
-                sh "docker image prune -f" 
+                sh "docker image prune -f" [cite: 189]
             }
         }
     }
